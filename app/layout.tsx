@@ -17,9 +17,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Lista de Compras Doméstica',
-  description: 'App acessível e eficiente de lista de compras doméstica com comando de voz, fontes ampliadas de alta legibilidade e controle fácil.',
-  applicationName: 'Lista de Compras Doméstica',
+  title: 'Remix MercadoList',
+  description: 'Imported from GitHub: Mercadomapsmm/MercadoList',
+  applicationName: 'Remix MercadoList',
   formatDetection: {
     telephone: false,
   },
@@ -34,14 +34,14 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'Lista de Compras Doméstica',
-    description: 'App acessível e eficiente de lista de compras doméstica com comando de voz, fontes ampliadas de alta legibilidade e controle fácil.',
+    title: 'Remix MercadoList',
+    description: 'Imported from GitHub: Mercadomapsmm/MercadoList',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Lista de Compras Doméstica',
-    description: 'App acessível e eficiente de lista de compras doméstica com comando de voz, fontes ampliadas de alta legibilidade e controle fácil.',
+    title: 'Remix MercadoList',
+    description: 'Imported from GitHub: Mercadomapsmm/MercadoList',
   },
 };
 

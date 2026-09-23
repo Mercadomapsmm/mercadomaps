@@ -29,7 +29,7 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
     <aside
       id="accessibility-bar"
       aria-label="Ajustes de Acessibilidade e Visualização"
-      className={`w-full border-b transition-colors ${activeTheme.bgAccessibility} ${activeTheme.borderAccessibility}`}
+      className={`w-full transition-colors border-none ${activeTheme.bgAccessibility}`}
     >
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-sm">
         {/* Paleta de Cores: 12 cores mantidas diretamente, sem escrever o nome */}

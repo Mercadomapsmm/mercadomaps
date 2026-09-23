@@ -198,7 +198,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({
       )}
 
       {/* Horizontal Scrollable Tabs / Cards for Lists */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {lists.map((list) => {
           const isActive = list.id === activeListId;
           const pendingItems = list.items.filter(i => !i.isBought).length;

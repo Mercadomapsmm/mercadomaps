@@ -198,6 +198,18 @@ export default function ShoppingListPage() {
   } | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Alternância de posições entre bans-01 e bani-01 a cada 30 segundos
+  const [topBannerId, setTopBannerId] = useState<'bans-01' | 'bani-01'>('bans-01');
+  const bottomBannerId: 'bans-01' | 'bani-01' = topBannerId === 'bans-01' ? 'bani-01' : 'bans-01';
+
+  useEffect(() => {
+    const bannerSwapInterval = setInterval(() => {
+      setTopBannerId((prev) => (prev === 'bans-01' ? 'bani-01' : 'bans-01'));
+    }, 30000);
+
+    return () => clearInterval(bannerSwapInterval);
+  }, []);
+
   // Load from localStorage on mount only to prevent hydration mismatch
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -582,10 +594,15 @@ export default function ShoppingListPage() {
       suppressHydrationWarning
       className={`min-h-screen transition-colors ${activeTheme.bgPage}`}
     >
-      {/* Banner Mercado Livre Superior */}
+      {/* Banner Mercado Livre Superior (alterna com o inferior a cada 30 segundos: bans-01 <-> bani-01) */}
       <div id="top-banner-wrapper" className="w-full">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-1.5">
-          <MercadoLivreBanner position="top" highContrast={settings.highContrast} />
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-1.5 transition-all duration-500">
+          <MercadoLivreBanner
+            key={`top-${topBannerId}`}
+            position="top"
+            internalName={topBannerId}
+            highContrast={settings.highContrast}
+          />
         </div>
       </div>
 
@@ -644,7 +661,7 @@ export default function ShoppingListPage() {
       {/* ÁREA FIXA NA TELA: Suas Listas de Compras */}
       <div
         id="fixed-screen-area"
-        className={`sticky top-0 z-30 w-full transition-colors border-b shadow-md backdrop-blur-md ${activeTheme.bgStickyHeader} ${activeTheme.borderStickyHeader}`}
+        className={`sticky top-0 z-30 w-full transition-colors border-none shadow-sm backdrop-blur-md ${activeTheme.bgStickyHeader}`}
       >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5">
           {/* List Navigation Tabs */}
@@ -863,9 +880,16 @@ export default function ShoppingListPage() {
           )}
         </section>
 
-        {/* Banner Mercado Livre no rodapé (rolagem normal junto ao conteúdo) */}
+        {/* Banner Mercado Livre no rodapé (alterna com o superior a cada 30 segundos: bani-01 <-> bans-01) */}
         <div id="footer-banner-wrapper" className="pt-2">
-          <MercadoLivreBanner position="bottom" highContrast={settings.highContrast} />
+          <div className="transition-all duration-500">
+            <MercadoLivreBanner
+              key={`bottom-${bottomBannerId}`}
+              position="bottom"
+              internalName={bottomBannerId}
+              highContrast={settings.highContrast}
+            />
+          </div>
         </div>
       </main>
 

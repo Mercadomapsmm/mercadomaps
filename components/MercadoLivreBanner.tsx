@@ -5,17 +5,22 @@ import { ExternalLink, Zap, Star, Truck } from 'lucide-react';
 
 interface MercadoLivreBannerProps {
   position?: 'top' | 'bottom';
+  internalName?: 'bans-01' | 'bani-01' | string;
   highContrast?: boolean;
 }
 
 export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
   position = 'top',
+  internalName,
   highContrast = false,
 }) => {
-  const isTop = position === 'top';
+  // Nome interno atribuído: bans-01 ou bani-01
+  const bannerInternalName = internalName || (position === 'top' ? 'bans-01' : 'bani-01');
+  const isBans01 = bannerInternalName === 'bans-01';
 
-  const product = isTop
+  const product = isBans01
     ? {
+        id: 'bans-01',
         title: 'Jogo De Panelas Cerâmico Antiaderente Indução 10 Peças',
         image: 'https://http2.mlstatic.com/D_NQ_NP_713526-MLA96104001241_102025-O.webp',
         fallbackImage: '/images/panelas_mercadolivre.webp',
@@ -29,6 +34,7 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
         ariaLabel: 'Anúncio Mercado Livre: Jogo De Panelas Cerâmico Antiaderente Indução 10 Peças em Oferta',
       }
     : {
+        id: 'bani-01',
         title: 'Honeywhale B20 Bicicleta Elétrica Dobrável Aro 14',
         image: 'https://http2.mlstatic.com/D_NQ_NP_603508-MLA113190607451_062026-O.webp',
         fallbackImage: '/images/bicicleta_mercadolivre.webp',
@@ -44,7 +50,9 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
 
   return (
     <div
-      id={`mercado-livre-banner-${position}`}
+      id={bannerInternalName}
+      data-banner-id={bannerInternalName}
+      data-internal-name={bannerInternalName}
       aria-label={product.ariaLabel}
       className={`w-full rounded-xl overflow-hidden border transition-all animate-gentle-blink ${
         highContrast
@@ -53,12 +61,19 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
       }`}
     >
       {/* Mercado Livre Compact Header Strip */}
-      <div className="bg-[#FFE600] text-[#2D3277] px-3 py-1 flex items-center justify-between gap-2 font-bold text-[10px] sm:text-xs">
-        <div className="flex items-center gap-1.5">
-          <span className="bg-[#2D3277] text-[#FFE600] px-1 py-0.5 rounded text-[10px] font-black">
-            ML
-          </span>
-          <span className="text-[#2D3277] font-black tracking-tight">mercado livre</span>
+      <div className="bg-[#FFE600] text-[#2D3277] px-3 py-1.5 flex items-center justify-between gap-2 font-bold text-[10px] sm:text-xs">
+        <div className="flex items-center gap-2">
+          {/* Logo Original Oficial do Mercado Livre */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/logo_mercadolivre@2x.png"
+            alt="Mercado Livre"
+            className="h-4 sm:h-5 w-auto object-contain shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                'https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/6.6.92/mercadolibre/logo__large_plus.png';
+            }}
+          />
           <span className="hidden sm:inline text-[#2D3277]/40">|</span>
           <span className="hidden sm:inline-flex items-center gap-0.5 text-[#2D3277] bg-white/70 px-1.5 py-0.5 rounded text-[10px] font-extrabold animate-pulse">
             <Zap className="w-2.5 h-2.5 fill-[#2D3277] text-[#2D3277]" />
@@ -143,7 +158,7 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
         {/* Action Button */}
         <div className="shrink-0 flex items-center">
           <a
-            id={`buy-ml-btn-${position}`}
+            id={`buy-ml-btn-${bannerInternalName}-${position}`}
             href={product.link}
             target="_blank"
             rel="noopener noreferrer"

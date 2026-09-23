@@ -30,6 +30,15 @@
   animation: gentle-blink 2.2s ease-in-out infinite;
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Smooth transitions for accessibility resize */
 * {
   -webkit-tap-highlight-color: transparent;
