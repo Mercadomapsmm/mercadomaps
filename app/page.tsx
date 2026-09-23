@@ -637,7 +637,7 @@ export default function ShoppingListPage() {
             id="header-share-app-btn"
             type="button"
             onClick={() => setIsShareModalOpen(true)}
-            className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all shadow-md active:scale-95 text-xs sm:text-sm ${activeTheme.bgButtonSecondary} ${activeTheme.textButtonSecondary} ${activeTheme.borderButtonSecondary} border`}
+            className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all active:scale-95 text-xs sm:text-sm ${activeTheme.bgButtonSecondary} ${activeTheme.textButtonSecondary} ${activeTheme.borderButtonSecondary} border`}
             title="Compartilhar o aplicativo e suas listas com outras pessoas"
           >
             <Share2 className="w-4 h-4" />
@@ -649,7 +649,7 @@ export default function ShoppingListPage() {
             id="header-voice-cta-button"
             type="button"
             onClick={() => setIsVoiceModalOpen(true)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 text-xs sm:text-sm ${activeTheme.bgButtonPrimary} ${activeTheme.textButtonPrimary}`}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 text-xs sm:text-sm ${activeTheme.bgButtonPrimary} ${activeTheme.textButtonPrimary}`}
             title="Ditar itens para a lista usando a voz"
           >
             <Mic className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
@@ -661,7 +661,7 @@ export default function ShoppingListPage() {
       {/* ÁREA FIXA NA TELA: Suas Listas de Compras */}
       <div
         id="fixed-screen-area"
-        className={`sticky top-0 z-30 w-full transition-colors border-none shadow-sm backdrop-blur-md ${activeTheme.bgStickyHeader}`}
+        className={`sticky top-0 z-30 w-full transition-colors border-none backdrop-blur-md ${activeTheme.bgStickyHeader}`}
       >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5">
           {/* List Navigation Tabs */}

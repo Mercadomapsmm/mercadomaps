@@ -125,7 +125,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({
             id="create-new-list-button"
             type="button"
             onClick={() => setIsCreating(true)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95 ${
+            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs sm:text-sm font-bold transition-all active:scale-95 ${
               highContrast || (contrastTheme && contrastTheme !== 'padrao')
                 ? `${activeTheme.bgButtonPrimary} ${activeTheme.textButtonPrimary}`
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -163,7 +163,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({
               type="button"
               onClick={handleVoiceCreateList}
               disabled={isListeningForListName}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition-all ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg font-bold text-xs sm:text-sm active:scale-95 transition-all ${
                 isListeningForListName
                   ? 'bg-rose-600 text-white animate-pulse'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -178,7 +178,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({
               id="save-new-list-button"
               type="submit"
               disabled={!newListName.trim()}
-              className="flex items-center gap-1 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm disabled:opacity-40"
+              className="flex items-center gap-1 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm disabled:opacity-40"
             >
               <Check className="w-4 h-4" />
               <span>Salvar</span>
@@ -208,7 +208,7 @@ export const ListSelector: React.FC<ListSelectorProps> = ({
               key={list.id}
               className={`group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
                 isActive
-                  ? `${activeTheme.bgButtonPrimary} ${activeTheme.textButtonPrimary} border-transparent shadow-md font-extrabold ring-2 ring-current`
+                  ? `${activeTheme.bgButtonPrimary} ${activeTheme.textButtonPrimary} border-transparent font-extrabold ring-2 ring-current`
                   : `${activeTheme.bgCard} ${activeTheme.borderCard} ${activeTheme.textPrimary} hover:opacity-90`
               }`}
               onClick={() => onSelectList(list.id)}

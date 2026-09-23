@@ -58,7 +58,7 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
                   }
                   className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
                     isSelected
-                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-black/20 scale-110 shadow-md z-10'
+                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-black/20 scale-110 z-10'
                       : 'opacity-80 hover:opacity-100 hover:scale-105'
                   }`}
                   style={{
@@ -112,7 +112,7 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
               id="stop-reading-button"
               type="button"
               onClick={onStopSpeaking}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs sm:text-sm animate-pulse hover:bg-rose-700 shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs sm:text-sm animate-pulse hover:bg-rose-700 cursor-pointer"
               title="Parar leitura em voz alta"
             >
               <VolumeX className="w-4 h-4" />
@@ -123,7 +123,7 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
               id="read-list-button"
               type="button"
               onClick={onReadList}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-transform active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition-transform active:scale-95 cursor-pointer"
               title="Ouvir lista de compras em voz alta"
             >
               <Volume className="w-4 h-4" />
