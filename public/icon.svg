@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Background with subtle corner radius -->
+  <rect width="512" height="512" rx="112" fill="url(#grad)"/>
+  
+  <!-- Shopping Cart Silhouette in White -->
+  <g filter="url(#shadow)" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Basket Outline -->
+    <path d="M120 148h52l38 184h186l32-136H192" stroke-width="28"/>
+    <!-- Wheels -->
+    <circle cx="218" cy="392" r="24" fill="#ffffff" stroke-width="0"/>
+    <circle cx="384" cy="392" r="24" fill="#ffffff" stroke-width="0"/>
+    <!-- Inner Checkmark (Success / Done items) -->
+    <path d="M252 228l36 36 68-72" stroke="#34d399" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
