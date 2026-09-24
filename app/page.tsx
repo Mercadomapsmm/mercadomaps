@@ -10,6 +10,7 @@ import { ShoppingListSummary } from '@/components/ShoppingListSummary';
 import { ListSelector } from '@/components/ListSelector';
 import { VoiceModal } from '@/components/VoiceModal';
 import { ShareModal } from '@/components/ShareModal';
+import { SharedImportModal } from '@/components/SharedImportModal';
 import { MercadoLivreBanner } from '@/components/MercadoLivreBanner';
 import { PwaRegister } from '@/components/PwaRegister';
 import { CONTRAST_THEMES } from '@/lib/contrastThemes';
@@ -544,6 +545,15 @@ export default function ShoppingListPage() {
       window.history.replaceState({}, document.title, url.pathname);
     }
     if (settings.soundFeedback) playAddSound();
+    try {
+      confetti({
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.6 },
+      });
+    } catch {
+      // Ignore
+    }
   };
 
   const handleImportLists = (newLists: ShoppingList[]) => {
@@ -779,53 +789,21 @@ export default function ShoppingListPage() {
 
       {/* Main Container */}
       <main className={`max-w-4xl mx-auto ${containerPaddingClass} pt-4 pb-12 space-y-5 sm:space-y-6`}>
-        {/* Banner de Importação de Listas Compartilhadas Recebidas */}
-        {sharedImportPrompt && (
-          <div
-            id="shared-list-import-banner"
-            className="p-4 rounded-2xl bg-emerald-700 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
-                <Share2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm sm:text-base">
-                  Listas de Compras Compartilhadas Recebidas!
-                </h3>
-                <p className="text-xs text-emerald-100">
-                  {sharedImportPrompt.sharedByName} compartilhou {sharedImportPrompt.lists.length}{' '}
-                  {sharedImportPrompt.lists.length === 1 ? 'lista' : 'listas'} ({sharedImportPrompt.lists.reduce((acc, l) => acc + l.items.length, 0)} itens). <strong>Suas listas já criadas serão 100% preservadas!</strong>
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                id="confirm-import-shared-btn"
-                type="button"
-                onClick={handleConfirmSharedImport}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white text-emerald-900 font-extrabold text-xs sm:text-sm hover:bg-emerald-50 transition-all shadow-xs active:scale-95 cursor-pointer"
-              >
-                Importar e Manter Atuais
-              </button>
-              <button
-                id="cancel-import-shared-btn"
-                type="button"
-                onClick={() => {
-                  setSharedImportPrompt(null);
-                  if (typeof window !== 'undefined') {
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('shared_data');
-                    window.history.replaceState({}, document.title, url.pathname);
-                  }
-                }}
-                className="px-3 py-2 rounded-xl text-emerald-200 hover:text-white hover:bg-white/10 text-xs sm:text-sm font-semibold transition-colors"
-              >
-                Ignorar
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Popup Modal para Confirmação da Atualização no Aparelho de Destino */}
+        <SharedImportModal
+          isOpen={!!sharedImportPrompt}
+          sharedData={sharedImportPrompt}
+          onConfirm={handleConfirmSharedImport}
+          onCancel={() => {
+            setSharedImportPrompt(null);
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('shared_data');
+              window.history.replaceState({}, document.title, url.pathname);
+            }
+          }}
+          highContrast={settings.highContrast}
+        />
 
         {/* Add Item Form / Quick Staples (retirado da parte fixa conforme solicitado) */}
         <AddItemBar
