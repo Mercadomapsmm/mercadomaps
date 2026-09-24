@@ -97,7 +97,166 @@ export function decodeListsFromUrl(encoded: string): SharedDataPayload | null {
 }
 
 /**
- * Gera texto formatado para envio no WhatsApp
+ * Gera texto formatado para envio no WhatsApp contendo TODAS as listas do app
+ */
+export function formatAllListsWhatsAppMessage(lists: ShoppingList[], appUrl: string, userName?: string): string {
+  const totalLists = lists.length;
+  let totalItemsCount = 0;
+  let totalPendingCount = 0;
+  let grandTotalEstimated = 0;
+
+  lists.forEach(l => {
+    l.items.forEach(i => {
+      totalItemsCount++;
+      if (!i.isBought) totalPendingCount++;
+      if (i.estimatedPrice) {
+        grandTotalEstimated += i.estimatedPrice * i.quantity;
+      }
+    });
+  });
+
+  let msg = `🛒 *MercadoList - Minhas Listas de Compras*\n`;
+  if (userName && userName !== 'Usuário') {
+    msg += `👤 Compartilhado por: ${userName}\n`;
+  }
+  msg += `📱 *Abra o aplicativo com todas as listas sincronizadas:*\n${appUrl}\n\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `📋 *RESUMO DE TODAS AS LISTAS (${totalLists} ${totalLists === 1 ? 'lista' : 'listas'} | ${totalPendingCount} a comprar)*\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  lists.forEach((list, index) => {
+    const toBuy = list.items.filter(i => !i.isBought);
+    const bought = list.items.filter(i => i.isBought);
+
+    let listSubtotal = 0;
+    list.items.forEach(i => {
+      if (i.estimatedPrice) {
+        listSubtotal += i.estimatedPrice * i.quantity;
+      }
+    });
+
+    const icon = list.icon || '🛒';
+    msg += `${icon} *${list.name.toUpperCase()}* (${list.items.length} itens)\n`;
+
+    if (toBuy.length > 0) {
+      msg += `  *A comprar (${toBuy.length}):*\n`;
+      toBuy.forEach(i => {
+        const priceStr = i.estimatedPrice && i.estimatedPrice > 0
+          ? ` - R$ ${(i.estimatedPrice * i.quantity).toFixed(2).replace('.', ',')}`
+          : '';
+        msg += `  ▫️ ${i.quantity} ${i.unit} de ${i.name}${priceStr}\n`;
+      });
+    }
+
+    if (bought.length > 0) {
+      msg += `  *No carrinho (${bought.length}):*\n`;
+      bought.forEach(i => {
+        msg += `  ~${i.quantity} ${i.unit} de ${i.name}~\n`;
+      });
+    }
+
+    if (listSubtotal > 0) {
+      msg += `  💵 Subtotal: R$ ${listSubtotal.toFixed(2).replace('.', ',')}\n`;
+    }
+
+    if (index < lists.length - 1) {
+      msg += `\n`;
+    }
+  });
+
+  if (grandTotalEstimated > 0) {
+    msg += `\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `💰 *VALOR TOTAL GERAL PREVISTO:* R$ ${grandTotalEstimated.toFixed(2).replace('.', ',')}\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+  }
+
+  msg += `\n📲 *Clique no link acima para abrir o app e sincronizar todas as listas!*`;
+
+  return msg;
+}
+
+/**
+ * Gera assunto e corpo de e-mail formatados para envio de TODAS as listas do app
+ */
+export function formatAllListsEmailMessage(lists: ShoppingList[], appUrl: string, userName?: string): { subject: string; body: string } {
+  const totalLists = lists.length;
+  let totalItemsCount = 0;
+  let totalPendingCount = 0;
+  let grandTotalEstimated = 0;
+
+  lists.forEach(l => {
+    l.items.forEach(i => {
+      totalItemsCount++;
+      if (!i.isBought) totalPendingCount++;
+      if (i.estimatedPrice) {
+        grandTotalEstimated += i.estimatedPrice * i.quantity;
+      }
+    });
+  });
+
+  const subject = `MercadoList - Minhas Listas de Compras (${totalLists} ${totalLists === 1 ? 'lista' : 'listas'})`;
+
+  let body = `Olá!\n\n`;
+  if (userName && userName !== 'Usuário') {
+    body += `${userName} compartilhou com você todas as listas de compras do aplicativo MercadoList.\n\n`;
+  } else {
+    body += `Estou compartilhando com você todas as listas de compras do aplicativo MercadoList.\n\n`;
+  }
+
+  body += `📱 LINK DO APP COM TODAS AS LISTAS:\n${appUrl}\n\n`;
+  body += `==============================================\n`;
+  body += `RESUMO DE TODAS AS LISTAS (${totalLists} ${totalLists === 1 ? 'lista' : 'listas'} | ${totalItemsCount} itens)\n`;
+  body += `==============================================\n\n`;
+
+  lists.forEach((list) => {
+    const toBuy = list.items.filter(i => !i.isBought);
+    const bought = list.items.filter(i => i.isBought);
+
+    let listSubtotal = 0;
+    list.items.forEach(i => {
+      if (i.estimatedPrice) {
+        listSubtotal += i.estimatedPrice * i.quantity;
+      }
+    });
+
+    body += `[${list.icon || '🛒'}] LISTA: ${list.name} (${list.items.length} itens)\n`;
+
+    if (toBuy.length > 0) {
+      body += `--- ITENS A COMPRAR (${toBuy.length}) ---\n`;
+      toBuy.forEach((i, idx) => {
+        const priceStr = i.estimatedPrice && i.estimatedPrice > 0
+          ? ` (R$ ${(i.estimatedPrice * i.quantity).toFixed(2).replace('.', ',')})`
+          : '';
+        body += `${idx + 1}. [ ] ${i.quantity} ${i.unit} - ${i.name}${priceStr}\n`;
+      });
+    }
+
+    if (bought.length > 0) {
+      body += `--- ITENS NO CARRINHO (${bought.length}) ---\n`;
+      bought.forEach((i, idx) => {
+        body += `${idx + 1}. [X] ${i.quantity} ${i.unit} - ${i.name}\n`;
+      });
+    }
+
+    if (listSubtotal > 0) {
+      body += `Subtotal estimado: R$ ${listSubtotal.toFixed(2).replace('.', ',')}\n`;
+    }
+
+    body += `\n----------------------------------------------\n\n`;
+  });
+
+  if (grandTotalEstimated > 0) {
+    body += `VALOR TOTAL GERAL PREVISTO: R$ ${grandTotalEstimated.toFixed(2).replace('.', ',')}\n\n`;
+  }
+
+  body += `Para abrir, editar e sincronizar todas as listas, basta acessar o link do aplicativo no seu navegador:\n${appUrl}\n\n`;
+  body += `Enviado através do aplicativo MercadoList.`;
+
+  return { subject, body };
+}
+
+/**
+ * Gera texto formatado para envio no WhatsApp (para lista única)
  */
 export function formatWhatsAppMessage(list: ShoppingList, appUrl: string): string {
   const toBuy = list.items.filter(i => !i.isBought);
@@ -110,8 +269,10 @@ export function formatWhatsAppMessage(list: ShoppingList, appUrl: string): strin
     }
   });
 
-  let msg = `🛒 *Lista de Compras: ${list.name}*\n`;
-  msg += `📱 *Acesse e sincronize esta lista no app:* ${appUrl}\n\n`;
+  let msg = `🛒 *MercadoList - Lista de Compras: ${list.name}*\n`;
+  if (appUrl) {
+    msg += `📱 *Acesse e sincronize esta lista no app:*\n${appUrl}\n\n`;
+  }
 
   if (toBuy.length > 0) {
     msg += `📋 *A COMPRAR (${toBuy.length}):*\n`;
@@ -151,7 +312,7 @@ export function formatEmailMessage(list: ShoppingList, appUrl: string): { subjec
     }
   });
 
-  const subject = `Lista de Compras: ${list.name}`;
+  const subject = `MercadoList - Lista de Compras: ${list.name}`;
   let body = `Olá!\n\nAqui está a sua lista de compras "${list.name}":\n\n`;
 
   if (toBuy.length > 0) {
@@ -178,10 +339,10 @@ export function formatEmailMessage(list: ShoppingList, appUrl: string): { subjec
   }
 
   if (appUrl) {
-    body += `Para abrir e sincronizar esta lista no aplicativo, clique no link abaixo:\n${appUrl}\n\n`;
+    body += `Para abrir e sincronizar esta lista no aplicativo MercadoList, clique no link abaixo:\n${appUrl}\n\n`;
   }
 
-  body += `Enviado através do aplicativo Lista de Compras Doméstica.`;
+  body += `Enviado através do aplicativo MercadoList.`;
 
   return { subject, body };
 }

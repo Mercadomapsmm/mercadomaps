@@ -192,7 +192,7 @@ export const ShoppingListSummary: React.FC<ShoppingListSummaryProps> = ({
             type="button"
             onClick={handleShareList}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm transition-transform active:scale-95"
-            title="Compartilhar lista por WhatsApp e E-mail"
+            title="Compartilhar a lista atual por WhatsApp e E-mail"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
             <span>{copied ? 'Copiado!' : 'Compartilhar'}</span>
