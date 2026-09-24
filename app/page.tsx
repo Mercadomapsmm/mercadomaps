@@ -733,7 +733,7 @@ export default function ShoppingListPage() {
             type="button"
             onClick={() => setIsShareModalOpen(true)}
             className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all active:scale-95 text-xs sm:text-sm ${activeTheme.bgButtonSecondary} ${activeTheme.textButtonSecondary} ${activeTheme.borderButtonSecondary} border`}
-            title="Compartilhar a lista atual por WhatsApp e E-mail"
+            title="Compartilhar todas as listas por WhatsApp"
           >
             <Share2 className="w-4 h-4" />
             <span>Compartilhar</span>

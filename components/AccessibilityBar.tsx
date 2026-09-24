@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { AccessibilitySettings } from '@/types/shopping';
-import { Volume2, VolumeX, Volume, Palette, Check } from 'lucide-react';
-import { CONTRAST_THEMES, THEME_LIST } from '@/lib/contrastThemes';
+import { Volume2, VolumeX, Volume, Palette } from 'lucide-react';
+import { CONTRAST_THEMES } from '@/lib/contrastThemes';
 
 interface AccessibilityBarProps {
   settings: AccessibilitySettings;
@@ -32,60 +32,55 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
       className={`w-full transition-colors border-none ${activeTheme.bgAccessibility}`}
     >
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-sm">
-        {/* Paleta de Cores: 12 cores mantidas diretamente, sem escrever o nome */}
-        <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-[280px]">
-          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap p-1 rounded-xl bg-black/10 dark:bg-white/10 border border-current/20">
-            <div
-              className="flex items-center justify-center px-1 text-emerald-500 shrink-0"
-              title="Paleta de Cores (12 temas de alto contraste)"
-              aria-hidden="true"
-            >
-              <Palette className="w-4 h-4" />
-            </div>
+        {/* Paleta de Cores: apenas as 2 cores padrão mais utilizadas com botão para alternar entre elas */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            id="toggle-theme-palette-btn"
+            type="button"
+            onClick={() => {
+              const nextTheme = currentThemeId === 'padrao' ? 'amarelo-preto' : 'padrao';
+              onUpdateSettings({
+                contrastTheme: nextTheme,
+                highContrast: nextTheme !== 'padrao',
+              });
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-current/25 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 transition-all cursor-pointer select-none active:scale-95 text-xs sm:text-sm font-bold"
+            title={`Alternar Cor: ${
+              currentThemeId === 'padrao'
+                ? 'Claro Padrão (Clique para Amarelo & Preto)'
+                : 'Amarelo & Preto (Clique para Claro Padrão)'
+            }`}
+            aria-label="Alternar entre as duas cores padrão mais utilizadas"
+          >
+            <Palette className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>
+              {currentThemeId === 'padrao' ? 'Claro' : 'Amarelo & Preto'}
+            </span>
 
-            {THEME_LIST.map((t) => {
-              const isSelected = currentThemeId === t.id;
-              return (
-                <button
-                  key={t.id}
-                  id={`contrast-btn-${t.id}`}
-                  type="button"
-                  onClick={() =>
-                    onUpdateSettings({
-                      contrastTheme: t.id,
-                      highContrast: t.id !== 'padrao',
-                    })
-                  }
-                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
-                    isSelected
-                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-black/20 scale-110 z-10'
-                      : 'opacity-80 hover:opacity-100 hover:scale-105'
-                  }`}
-                  style={{
-                    backgroundColor: t.dotColor,
-                    borderColor: t.borderDot,
-                  }}
-                  title={`${t.name}: ${t.description}`}
-                  aria-label={`Tema ${t.name}`}
-                  aria-pressed={isSelected}
-                >
-                  {isSelected && (
-                    <Check
-                      className="w-3.5 h-3.5 stroke-[3]"
-                      style={{
-                        color:
-                          t.borderDot === '#000000' ||
-                          t.borderDot === '#0A1128' ||
-                          t.id === 'padrao'
-                            ? '#059669'
-                            : '#FFFFFF',
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            {/* Indicadores visuais das duas cores padrão */}
+            <div className="flex items-center gap-1.5 ml-1 p-1 rounded-full bg-black/10 dark:bg-white/10">
+              {/* Cor 1: Claro Padrão */}
+              <span
+                className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                  currentThemeId === 'padrao'
+                    ? 'ring-2 ring-emerald-500 ring-offset-1 scale-110'
+                    : 'opacity-40'
+                }`}
+                style={{ backgroundColor: '#FFFFFF', borderColor: '#94A3B8' }}
+                title="Claro Padrão"
+              />
+              {/* Cor 2: Amarelo & Preto */}
+              <span
+                className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                  currentThemeId === 'amarelo-preto'
+                    ? 'ring-2 ring-emerald-500 ring-offset-1 scale-110'
+                    : 'opacity-40'
+                }`}
+                style={{ backgroundColor: '#FACC15', borderColor: '#000000' }}
+                title="Amarelo & Preto"
+              />
+            </div>
+          </button>
         </div>
 
         {/* Som & Leitura da Lista */}
@@ -140,4 +135,3 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
     </aside>
   );
 };
-
