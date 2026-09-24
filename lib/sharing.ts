@@ -97,81 +97,14 @@ export function decodeListsFromUrl(encoded: string): SharedDataPayload | null {
 }
 
 /**
- * Gera texto formatado para envio no WhatsApp contendo TODAS as listas do app
+ * Gera texto formatado para envio no WhatsApp contendo somente o ícone e a descrição do app
  */
 export function formatAllListsWhatsAppMessage(lists: ShoppingList[], appUrl: string, userName?: string): string {
-  const totalLists = lists.length;
-  let totalItemsCount = 0;
-  let totalPendingCount = 0;
-  let grandTotalEstimated = 0;
-
-  lists.forEach(l => {
-    l.items.forEach(i => {
-      totalItemsCount++;
-      if (!i.isBought) totalPendingCount++;
-      if (i.estimatedPrice) {
-        grandTotalEstimated += i.estimatedPrice * i.quantity;
-      }
-    });
-  });
-
-  let msg = `🛒 *MercadoList - Minhas Listas de Compras*\n`;
-  if (userName && userName !== 'Usuário') {
-    msg += `👤 Compartilhado por: ${userName}\n`;
+  let msg = `🛒 *Lista de Compras*\n`;
+  msg += `App acessível e prático de lista de compras doméstica com comando de voz, fontes legíveis e organização por categorias de supermercado.\n\n`;
+  if (appUrl) {
+    msg += `📱 *Acesse o aplicativo:* ${appUrl}`;
   }
-  msg += `📱 *Abra o aplicativo com todas as listas sincronizadas:*\n${appUrl}\n\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `📋 *RESUMO DE TODAS AS LISTAS (${totalLists} ${totalLists === 1 ? 'lista' : 'listas'} | ${totalPendingCount} a comprar)*\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-  lists.forEach((list, index) => {
-    const toBuy = list.items.filter(i => !i.isBought);
-    const bought = list.items.filter(i => i.isBought);
-
-    let listSubtotal = 0;
-    list.items.forEach(i => {
-      if (i.estimatedPrice) {
-        listSubtotal += i.estimatedPrice * i.quantity;
-      }
-    });
-
-    const icon = list.icon || '🛒';
-    msg += `${icon} *${list.name.toUpperCase()}* (${list.items.length} itens)\n`;
-
-    if (toBuy.length > 0) {
-      msg += `  *A comprar (${toBuy.length}):*\n`;
-      toBuy.forEach(i => {
-        const priceStr = i.estimatedPrice && i.estimatedPrice > 0
-          ? ` - R$ ${(i.estimatedPrice * i.quantity).toFixed(2).replace('.', ',')}`
-          : '';
-        msg += `  ▫️ ${i.quantity} ${i.unit} de ${i.name}${priceStr}\n`;
-      });
-    }
-
-    if (bought.length > 0) {
-      msg += `  *No carrinho (${bought.length}):*\n`;
-      bought.forEach(i => {
-        msg += `  ~${i.quantity} ${i.unit} de ${i.name}~\n`;
-      });
-    }
-
-    if (listSubtotal > 0) {
-      msg += `  💵 Subtotal: R$ ${listSubtotal.toFixed(2).replace('.', ',')}\n`;
-    }
-
-    if (index < lists.length - 1) {
-      msg += `\n`;
-    }
-  });
-
-  if (grandTotalEstimated > 0) {
-    msg += `\n━━━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `💰 *VALOR TOTAL GERAL PREVISTO:* R$ ${grandTotalEstimated.toFixed(2).replace('.', ',')}\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-  }
-
-  msg += `\n📲 *Clique no link acima para abrir o app e sincronizar todas as listas!*`;
-
   return msg;
 }
 
@@ -259,42 +192,11 @@ export function formatAllListsEmailMessage(lists: ShoppingList[], appUrl: string
  * Gera texto formatado para envio no WhatsApp (para lista única)
  */
 export function formatWhatsAppMessage(list: ShoppingList, appUrl: string): string {
-  const toBuy = list.items.filter(i => !i.isBought);
-  const bought = list.items.filter(i => i.isBought);
-
-  let totalEst = 0;
-  list.items.forEach(i => {
-    if (i.estimatedPrice) {
-      totalEst += i.estimatedPrice * i.quantity;
-    }
-  });
-
-  let msg = `🛒 *MercadoList - Lista de Compras: ${list.name}*\n`;
+  let msg = `🛒 *Lista de Compras*\n`;
+  msg += `App acessível e prático de lista de compras doméstica com comando de voz, fontes legíveis e organização por categorias de supermercado.\n\n`;
   if (appUrl) {
-    msg += `📱 *Acesse e sincronize esta lista no app:*\n${appUrl}\n\n`;
+    msg += `📱 *Acesse o aplicativo:* ${appUrl}`;
   }
-
-  if (toBuy.length > 0) {
-    msg += `📋 *A COMPRAR (${toBuy.length}):*\n`;
-    toBuy.forEach(i => {
-      const priceStr = i.estimatedPrice && i.estimatedPrice > 0
-        ? ` - R$ ${(i.estimatedPrice * i.quantity).toFixed(2).replace('.', ',')}`
-        : '';
-      msg += `▫️ ${i.quantity} ${i.unit} de ${i.name}${priceStr}\n`;
-    });
-  }
-
-  if (bought.length > 0) {
-    msg += `\n✅ *JÁ NO CARRINHO (${bought.length}):*\n`;
-    bought.forEach(i => {
-      msg += `~${i.quantity} ${i.unit} de ${i.name}~\n`;
-    });
-  }
-
-  if (totalEst > 0) {
-    msg += `\n💰 *Total Estimado:* R$ ${totalEst.toFixed(2).replace('.', ',')}\n`;
-  }
-
   return msg;
 }
 

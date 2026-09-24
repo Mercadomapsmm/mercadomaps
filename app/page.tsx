@@ -713,11 +713,14 @@ export default function ShoppingListPage() {
 
       {/* Header Principal do App com Título sempre em Destaque e Ações */}
       <header className="max-w-4xl mx-auto px-3 sm:px-4 pt-3 pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`w-2.5 sm:w-3 h-8 sm:h-9 rounded-full ${activeTheme.accentBar}`}
+        <div className="flex items-center gap-3">
+          <div
+            id="app-default-icon"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-md shrink-0"
             aria-hidden="true"
-          />
+          >
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
           <h1
             id="app-main-title"
             className={`text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-none ${activeTheme.titleColor}`}

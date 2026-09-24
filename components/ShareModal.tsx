@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { ShoppingList } from '@/types/shopping';
-import { X, MessageCircle, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { X, MessageCircle, ExternalLink, ShoppingCart } from 'lucide-react';
 import { encodeListsForUrl, formatAllListsWhatsAppMessage } from '@/lib/sharing';
 import { playAddSound } from '@/lib/sound';
 
@@ -25,7 +25,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   highContrast,
   soundEnabled,
 }) => {
-  // Gera o link de sincronização contendo TODAS as listas criadas
+  // Gera o link de sincronização contendo as listas criadas
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !lists || lists.length === 0) return '';
     const encoded = encodeListsForUrl(lists, userName);
@@ -34,17 +34,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   if (!isOpen) return null;
 
-  const totalListsCount = lists.length;
-  let totalItemsCount = 0;
-  let totalPendingCount = 0;
-  lists.forEach((l) => {
-    l.items.forEach((item) => {
-      totalItemsCount++;
-      if (!item.isBought) totalPendingCount++;
-    });
-  });
-
-  // Compartilhamento exclusivo no WhatsApp de TODAS as listas
+  // Compartilhamento no WhatsApp listando somente o ícone e a descrição do app
   const handleShareWhatsApp = () => {
     const text = formatAllListsWhatsAppMessage(lists, shareUrl, userName);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
@@ -68,18 +58,18 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
         }`}
       >
-        {/* Modal Header */}
+        {/* Modal Header com o Ícone Padrão do Aplicativo */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shadow-md shrink-0">
-              <MessageCircle className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shrink-0">
+              <ShoppingCart className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black tracking-tight">
-                Compartilhar no WhatsApp
+                Lista de Compras
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {totalListsCount} {totalListsCount === 1 ? 'lista' : 'listas'} criadas ({totalPendingCount} itens a comprar de {totalItemsCount})
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                Compartilhar Aplicativo
               </p>
             </div>
           </div>
@@ -94,15 +84,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </button>
         </div>
 
-        {/* Informação sobre manter listas existentes no destino */}
-        <div className="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <span>
-            Todas as listas já criadas no destino serão mantidas e os novos itens serão adicionados.
-          </span>
+        {/* Card exibindo somente o ícone e a descrição do app */}
+        <div className="mt-5 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-center space-y-2.5">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+            <ShoppingCart className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+            Lista de Compras Doméstica
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            App acessível e prático de lista de compras doméstica com comando de voz, fontes legíveis e organização por categorias de supermercado.
+          </p>
         </div>
 
-        {/* Único botão de compartilhamento: WhatsApp */}
+        {/* Botão de compartilhamento direto no WhatsApp */}
         <div className="mt-5">
           <button
             id="share-whatsapp-direct-btn"
