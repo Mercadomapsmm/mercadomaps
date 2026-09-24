@@ -485,9 +485,55 @@ export default function ShoppingListPage() {
     );
   };
 
+  // Mescla as listas recebidas mantendo todas as listas já criadas no destino
+  const mergeIncomingListsWithExisting = (
+    incomingLists: ShoppingList[],
+    existingLists: ShoppingList[]
+  ): ShoppingList[] => {
+    const merged = [...existingLists];
+
+    incomingLists.forEach((incoming) => {
+      const matchIndex = merged.findIndex(
+        (l) =>
+          l.id === incoming.id ||
+          l.name.trim().toLowerCase() === incoming.name.trim().toLowerCase()
+      );
+
+      if (matchIndex >= 0) {
+        // Lista já existente no destino: preserva e mescla novos itens sem duplicar por nome
+        const existing = merged[matchIndex];
+        const existingItemNames = new Set(
+          existing.items.map((i) => i.name.trim().toLowerCase())
+        );
+
+        const newItemsToAdd = incoming.items
+          .filter((item) => !existingItemNames.has(item.name.trim().toLowerCase()))
+          .map((item) => ({
+            ...item,
+            id: `item-merged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          }));
+
+        merged[matchIndex] = {
+          ...existing,
+          items: [...existing.items, ...newItemsToAdd],
+          updatedAt: Date.now(),
+        };
+      } else {
+        // Nova lista: adiciona à coleção existente sem substituir nenhuma lista anterior
+        merged.push({
+          ...incoming,
+          id: `list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          updatedAt: Date.now(),
+        });
+      }
+    });
+
+    return merged;
+  };
+
   const handleConfirmSharedImport = () => {
     if (!sharedImportPrompt) return;
-    setLists(sharedImportPrompt.lists);
+    setLists((prev) => mergeIncomingListsWithExisting(sharedImportPrompt.lists, prev));
     if (sharedImportPrompt.lists[0]) {
       setActiveListId(sharedImportPrompt.lists[0].id);
     }
@@ -501,10 +547,7 @@ export default function ShoppingListPage() {
   };
 
   const handleImportLists = (newLists: ShoppingList[]) => {
-    setLists(newLists);
-    if (newLists[0]) {
-      setActiveListId(newLists[0].id);
-    }
+    setLists((prev) => mergeIncomingListsWithExisting(newLists, prev));
   };
 
   const handleClearBought = () => {
@@ -749,8 +792,7 @@ export default function ShoppingListPage() {
                 </h3>
                 <p className="text-xs text-emerald-100">
                   {sharedImportPrompt.sharedByName} compartilhou {sharedImportPrompt.lists.length}{' '}
-                  {sharedImportPrompt.lists.length === 1 ? 'lista' : 'listas'} com{' '}
-                  {sharedImportPrompt.lists.reduce((acc, l) => acc + l.items.length, 0)} itens com você.
+                  {sharedImportPrompt.lists.length === 1 ? 'lista' : 'listas'} ({sharedImportPrompt.lists.reduce((acc, l) => acc + l.items.length, 0)} itens). <strong>Suas listas já criadas serão 100% preservadas!</strong>
                 </p>
               </div>
             </div>
@@ -759,9 +801,9 @@ export default function ShoppingListPage() {
                 id="confirm-import-shared-btn"
                 type="button"
                 onClick={handleConfirmSharedImport}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white text-emerald-900 font-extrabold text-xs sm:text-sm hover:bg-emerald-50 transition-all shadow-xs active:scale-95"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white text-emerald-900 font-extrabold text-xs sm:text-sm hover:bg-emerald-50 transition-all shadow-xs active:scale-95 cursor-pointer"
               >
-                Importar para o Meu App
+                Importar e Manter Atuais
               </button>
               <button
                 id="cancel-import-shared-btn"

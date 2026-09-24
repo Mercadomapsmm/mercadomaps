@@ -10,8 +10,15 @@ import {
   MessageCircle,
   Send,
   AlertCircle,
+  QrCode,
+  CheckCircle2,
+  Wifi,
 } from 'lucide-react';
-import { encodeListsForUrl, formatWhatsAppMessage, formatEmailMessage } from '@/lib/sharing';
+import {
+  encodeListsForUrl,
+  formatAllListsWhatsAppMessage,
+  formatAllListsEmailMessage,
+} from '@/lib/sharing';
 import { playAddSound } from '@/lib/sound';
 
 interface ShareModalProps {
@@ -29,43 +36,55 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   isOpen,
   onClose,
   lists,
-  activeList,
   userName = 'Usuário',
   highContrast,
   soundEnabled,
 }) => {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [whatsappConnectionRequested, setWhatsappConnectionRequested] = useState(false);
+  const [showConnectInstructions, setShowConnectInstructions] = useState(false);
 
-  // Lista atual selecionada para compartilhamento
-  const targetList = activeList || lists[0];
-
-  // Gera o link de sincronização da lista atual
+  // Gera o link de sincronização contendo TODAS as listas criadas
   const shareUrl = useMemo(() => {
-    if (typeof window === 'undefined' || !targetList) return '';
-    const encoded = encodeListsForUrl([targetList], userName);
+    if (typeof window === 'undefined' || !lists || lists.length === 0) return '';
+    const encoded = encodeListsForUrl(lists, userName);
     return `${window.location.origin}${window.location.pathname}?shared_data=${encoded}`;
-  }, [targetList, userName]);
+  }, [lists, userName]);
 
-  if (!isOpen || !targetList) return null;
+  if (!isOpen) return null;
 
-  const totalItems = targetList.items.length;
-  const pendingItems = targetList.items.filter((i) => !i.isBought).length;
+  const totalListsCount = lists.length;
+  let totalItemsCount = 0;
+  let totalPendingCount = 0;
+  lists.forEach((l) => {
+    l.items.forEach((item) => {
+      totalItemsCount++;
+      if (!item.isBought) totalPendingCount++;
+    });
+  });
 
-  // Compartilhamento direto no WhatsApp (da lista atual, sem copiar mensagem)
+  // Compartilhamento direto no WhatsApp de TODAS as listas
   const handleShareWhatsApp = () => {
-    const text = formatWhatsAppMessage(targetList, shareUrl);
+    const text = formatAllListsWhatsAppMessage(lists, shareUrl, userName);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     if (soundEnabled) playAddSound();
+    setWhatsappConnectionRequested(true);
     window.open(whatsappUrl, '_blank');
   };
 
-  // Enviar por E-mail (da lista atual para o e-mail informado, sem copiar texto)
+  // Solicitar conexão com o WhatsApp Web (caso não esteja conectado)
+  const handleConnectWhatsApp = () => {
+    if (soundEnabled) playAddSound();
+    setShowConnectInstructions(true);
+    window.open('https://web.whatsapp.com', '_blank');
+  };
+
+  // Enviar por E-mail contendo TODAS as listas do app para o e-mail informado
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault();
     const email = recipientEmail.trim();
 
-    // Validação do e-mail a ser informado
     if (!email) {
       setEmailError('Por favor, informe o e-mail de destino.');
       return;
@@ -80,7 +99,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     setEmailError(null);
     if (soundEnabled) playAddSound();
 
-    const { subject, body } = formatEmailMessage(targetList, shareUrl);
+    const { subject, body } = formatAllListsEmailMessage(lists, shareUrl, userName);
     const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(body)}`;
@@ -97,7 +116,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       <div
         id="share-modal-card"
         onClick={(e) => e.stopPropagation()}
-        className={`w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl border transition-all max-h-[92vh] overflow-y-auto ${
+        className={`w-full max-w-lg rounded-2xl p-5 sm:p-6 shadow-2xl border transition-all max-h-[92vh] overflow-y-auto ${
           highContrast
             ? 'bg-black border-2 border-yellow-400 text-white'
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
@@ -111,11 +130,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-1.5">
-                <span>{targetList.icon || '🛒'}</span>
-                <span>{targetList.name}</span>
+                <span>Compartilhar Todas as Listas</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Compartilhando a lista atual ({pendingItems} itens a comprar de {totalItems})
+                {totalListsCount} {totalListsCount === 1 ? 'lista' : 'listas'} criadas ({totalPendingCount} itens a comprar de {totalItemsCount})
               </p>
             </div>
           </div>
@@ -130,9 +148,17 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </button>
         </div>
 
-        {/* Exclusive Share Options: WhatsApp & E-mail (Sem botões de copiar) */}
-        <div className="mt-5 space-y-4">
-          {/* 1. SEÇÃO WHATSAPP */}
+        {/* Informação sobre manter listas existentes no destino */}
+        <div className="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>
+            <strong>Preservação garantida:</strong> Ao receber o compartilhamento, todas as listas já existentes no destino serão mantidas intactas.
+          </span>
+        </div>
+
+        {/* Share Options: WhatsApp & E-mail */}
+        <div className="mt-4 space-y-4">
+          {/* 1. SEÇÃO WHATSAPP COM SOLICITAÇÃO DE CONEXÃO */}
           <div
             className={`p-4 rounded-2xl border transition-all ${
               highContrast
@@ -149,26 +175,70 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   Compartilhar no WhatsApp
                 </h3>
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                  Envia a lista &ldquo;{targetList.name}&rdquo; diretamente pelo WhatsApp.
+                  Envia todas as {totalListsCount} listas completas formatadas com link direto para sincronização.
                 </p>
               </div>
             </div>
 
-            <div className="mt-3">
+            {/* Aviso e Verificação de Conexão com o WhatsApp */}
+            <div className="my-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-200 text-xs flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 font-bold">
+                <Wifi className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Conexão com o WhatsApp necessária</span>
+              </div>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                Se o WhatsApp não estiver conectado neste navegador ou aplicativo, conecte seu aparelho através do WhatsApp Web para enviar a mensagem.
+              </p>
+              <button
+                type="button"
+                onClick={handleConnectWhatsApp}
+                className="self-start inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 underline hover:text-emerald-900 cursor-pointer"
+              >
+                <QrCode className="w-3 h-3" />
+                <span>Solicitar conexão / Conectar WhatsApp Web (QR Code)</span>
+              </button>
+            </div>
+
+            {/* Instruções de conexão se solicitadas ou exibidas */}
+            {(showConnectInstructions || whatsappConnectionRequested) && (
+              <div className="mb-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-xs text-slate-700 dark:text-slate-300 space-y-1 animate-in fade-in">
+                <p className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>Como conectar seu WhatsApp:</span>
+                </p>
+                <ol className="list-decimal list-inside text-[11px] space-y-0.5 text-slate-600 dark:text-slate-400">
+                  <li>Abra o WhatsApp no seu celular</li>
+                  <li>Acesse <strong>Configurações / Opções</strong> &gt; <strong>Aparelhos Conectados</strong></li>
+                  <li>Toque em <strong>Conectar um aparelho</strong> e aponte a câmera para a tela</li>
+                </ol>
+              </div>
+            )}
+
+            {/* Botão de envio principal */}
+            <div className="mt-2 flex flex-col sm:flex-row gap-2">
               <button
                 id="share-whatsapp-direct-btn"
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Abrir no WhatsApp</span>
+                <span>Abrir no WhatsApp e Enviar</span>
                 <ExternalLink className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleConnectWhatsApp}
+                className="px-3.5 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                title="Abrir WhatsApp Web para escanear QR Code"
+              >
+                <QrCode className="w-4 h-4 text-emerald-600" />
+                <span>Conectar WhatsApp</span>
               </button>
             </div>
           </div>
 
-          {/* 2. SEÇÃO E-MAIL (E-mail a ser informado) */}
+          {/* 2. SEÇÃO E-MAIL (E-mail informado, todas as listas) */}
           <div
             className={`p-4 rounded-2xl border transition-all ${
               highContrast
@@ -185,7 +255,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   Compartilhar por E-mail
                 </h3>
                 <p className="text-xs text-blue-700 dark:text-blue-400">
-                  Informe o e-mail de destino para enviar a lista &ldquo;{targetList.name}&rdquo;.
+                  Informe o e-mail de destino para enviar todas as {totalListsCount} listas completas.
                 </p>
               </div>
             </div>
@@ -239,7 +309,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         {/* Rodapé explicativo */}
         <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            A lista compartilhada contém os itens, quantidades, valores e o link para visualização e sincronização no aplicativo.
+            Todas as listas criadas serão enviadas com itens, quantidades, valores e o link para visualização e sincronização sem substituir as listas existentes no destino.
           </p>
         </div>
       </div>
