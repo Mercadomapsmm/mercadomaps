@@ -49,12 +49,32 @@ export function encodeListsForUrl(lists: ShoppingList[], sharedByName: string): 
 }
 
 /**
- * Decodifica as listas a partir do parâmetro da URL
+ * Decodifica as listas a partir do parâmetro da URL de forma resiliente
  */
 export function decodeListsFromUrl(encoded: string): SharedDataPayload | null {
   try {
-    const rawB64 = decodeURIComponent(encoded);
-    const binary = atob(rawB64);
+    if (!encoded) return null;
+    let cleanStr = encoded.trim();
+
+    // Caso a string ainda contenha percent-encoding:
+    try {
+      if (cleanStr.includes('%')) {
+        cleanStr = decodeURIComponent(cleanStr);
+      }
+    } catch {
+      // Ignora erro de URI e continua com a string atual
+    }
+
+    // Corrige espaços gerados pelo URLSearchParams (que converte + para espaço)
+    // e normaliza caracteres URL-safe (- e _) para + e /
+    cleanStr = cleanStr.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+
+    // Preenche o padding em base64 se necessário
+    while (cleanStr.length % 4 !== 0) {
+      cleanStr += '=';
+    }
+
+    const binary = atob(cleanStr);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);

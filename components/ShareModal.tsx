@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ShoppingList } from '@/types/shopping';
-import { X, MessageCircle, ExternalLink, ShoppingCart } from 'lucide-react';
+import { X, MessageCircle, ExternalLink, ShoppingCart, Copy, Check } from 'lucide-react';
 import { encodeListsForUrl, formatAllListsWhatsAppMessage } from '@/lib/sharing';
 import { playAddSound } from '@/lib/sound';
 
@@ -25,22 +25,73 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   highContrast,
   soundEnabled,
 }) => {
+  const [copied, setCopied] = useState(false);
+
   // Gera o link de sincronização contendo as listas criadas
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !lists || lists.length === 0) return '';
     const encoded = encodeListsForUrl(lists, userName);
-    return `${window.location.origin}${window.location.pathname}?shared_data=${encoded}`;
+    let origin = window.location.origin;
+    // Se estiver rodando no preview de desenvolvimento (ais-dev-), converte para a URL pública (ais-pre-)
+    if (origin.includes('ais-dev-')) {
+      origin = origin.replace('ais-dev-', 'ais-pre-');
+    }
+    return `${origin}${window.location.pathname}?shared_data=${encoded}`;
   }, [lists, userName]);
+
+  const textToShare = useMemo(() => {
+    return formatAllListsWhatsAppMessage(lists, shareUrl, userName);
+  }, [lists, shareUrl, userName]);
+
+  const whatsappUrl = useMemo(() => {
+    if (!shareUrl) return '#';
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(textToShare)}`;
+  }, [textToShare, shareUrl]);
 
   if (!isOpen) return null;
 
-  // Compartilhamento no WhatsApp listando somente o ícone e a descrição do app
-  const handleShareWhatsApp = () => {
-    const text = formatAllListsWhatsAppMessage(lists, shareUrl, userName);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  // Compartilhamento robusto com suporte a Web Share (mobile) e WhatsApp direto
+  const handleShareClick = async (e: React.MouseEvent) => {
     if (soundEnabled) playAddSound();
-    window.open(whatsappUrl, '_blank');
-    onClose();
+
+    // Copia para área de transferência como garantia
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(textToShare).catch(() => {});
+    }
+
+    // Se o dispositivo tiver suporte nativo a compartilhamento (celulares Android/iOS)
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      e.preventDefault();
+      try {
+        await navigator.share({
+          title: 'Lista de Compras',
+          text: textToShare,
+        });
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+        return;
+      } catch (err: any) {
+        // Se o usuário apenas cancelou, ignora. Se falhou, continua para abrir WhatsApp
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: abre o link do WhatsApp
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleCopyOnly = async () => {
+    if (soundEnabled) playAddSound();
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(textToShare);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } catch {
+        // Fallback manual
+      }
+    }
   };
 
   return (
@@ -97,17 +148,37 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </p>
         </div>
 
+        {/* Notificação de link copiado se acionado */}
+        {copied && (
+          <div className="mt-3 p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 animate-in fade-in">
+            <Check className="w-4 h-4 text-emerald-600" />
+            <span>Link copiado e pronto para compartilhar!</span>
+          </div>
+        )}
+
         {/* Botão de compartilhamento direto no WhatsApp */}
-        <div className="mt-5">
-          <button
+        <div className="mt-4 space-y-2">
+          <a
             id="share-whatsapp-direct-btn"
-            type="button"
-            onClick={handleShareWhatsApp}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleShareClick}
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer text-center"
           >
             <MessageCircle className="w-5 h-5 fill-white" />
             <span>Compartilhar no WhatsApp</span>
             <ExternalLink className="w-4 h-4" />
+          </a>
+
+          <button
+            id="copy-share-link-fallback-btn"
+            type="button"
+            onClick={handleCopyOnly}
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span>Copiar link de compartilhamento</span>
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AccessibilitySettings } from '@/types/shopping';
-import { Volume2, VolumeX, Volume, Palette } from 'lucide-react';
+import { Volume2, VolumeX, Volume } from 'lucide-react';
 import { CONTRAST_THEMES } from '@/lib/contrastThemes';
 
 interface AccessibilityBarProps {
@@ -52,7 +52,6 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
             }`}
             aria-label="Alternar entre as duas cores padrão mais utilizadas"
           >
-            <Palette className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>
               {currentThemeId === 'padrao' ? 'Claro' : 'Amarelo & Preto'}
             </span>

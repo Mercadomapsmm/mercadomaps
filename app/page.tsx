@@ -234,11 +234,23 @@ export default function ShoppingListPage() {
 
         // Verifica se há dados de listas compartilhadas na URL (?shared_data=)
         if (typeof window !== 'undefined') {
-          const params = new URLSearchParams(window.location.search);
-          const sharedData = params.get('shared_data');
+          let sharedData: string | null = null;
+          try {
+            const params = new URLSearchParams(window.location.search);
+            sharedData = params.get('shared_data');
+            if (!sharedData && window.location.hash.includes('shared_data=')) {
+              const hashIdx = window.location.hash.indexOf('?');
+              if (hashIdx !== -1) {
+                const hashParams = new URLSearchParams(window.location.hash.slice(hashIdx));
+                sharedData = hashParams.get('shared_data');
+              }
+            }
+          } catch {
+            // Ignore
+          }
           if (sharedData) {
             const decoded = decodeListsFromUrl(sharedData);
-            if (decoded && decoded.lists.length > 0) {
+            if (decoded && decoded.lists && decoded.lists.length > 0) {
               setSharedImportPrompt(decoded);
             }
           }
