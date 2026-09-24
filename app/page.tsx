@@ -606,6 +606,58 @@ export default function ShoppingListPage() {
         </div>
       </div>
 
+      {/* Banners Mercado Livre Ocultos (bans-02..05 idênticos ao bans-01; bani-02..05 idênticos ao bani-01) */}
+      <div id="hidden-banners-container" className="hidden" aria-hidden="true" style={{ display: 'none' }}>
+        <MercadoLivreBanner
+          internalName="bans-02"
+          position="top"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bans-03"
+          position="top"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bans-04"
+          position="top"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bans-05"
+          position="top"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bani-02"
+          position="bottom"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bani-03"
+          position="bottom"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bani-04"
+          position="bottom"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+        <MercadoLivreBanner
+          internalName="bani-05"
+          position="bottom"
+          hidden={true}
+          highContrast={settings.highContrast}
+        />
+      </div>
+
       {/* Barra de Acessibilidade */}
       <AccessibilityBar
         settings={settings}

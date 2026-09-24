@@ -5,22 +5,37 @@ import { ExternalLink, Zap, Star, Truck } from 'lucide-react';
 
 interface MercadoLivreBannerProps {
   position?: 'top' | 'bottom';
-  internalName?: 'bans-01' | 'bani-01' | string;
+  internalName?:
+    | 'bans-01'
+    | 'bans-02'
+    | 'bans-03'
+    | 'bans-04'
+    | 'bans-05'
+    | 'bani-01'
+    | 'bani-02'
+    | 'bani-03'
+    | 'bani-04'
+    | 'bani-05'
+    | string;
   highContrast?: boolean;
+  hidden?: boolean;
+  className?: string;
 }
 
 export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
   position = 'top',
   internalName,
   highContrast = false,
+  hidden = false,
+  className = '',
 }) => {
-  // Nome interno atribuído: bans-01 ou bani-01
+  // Nome interno atribuído: bans-01..05 ou bani-01..05
   const bannerInternalName = internalName || (position === 'top' ? 'bans-01' : 'bani-01');
-  const isBans01 = bannerInternalName === 'bans-01';
+  const isBansVariant = bannerInternalName.startsWith('bans-');
 
-  const product = isBans01
+  const product = isBansVariant
     ? {
-        id: 'bans-01',
+        id: bannerInternalName,
         title: 'Jogo De Panelas Cerâmico Antiaderente Indução 10 Peças',
         image: 'https://http2.mlstatic.com/D_NQ_NP_713526-MLA96104001241_102025-O.webp',
         fallbackImage: '/images/panelas_mercadolivre.webp',
@@ -34,7 +49,7 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
         ariaLabel: 'Anúncio Mercado Livre: Jogo De Panelas Cerâmico Antiaderente Indução 10 Peças em Oferta',
       }
     : {
-        id: 'bani-01',
+        id: bannerInternalName,
         title: 'Honeywhale B20 Bicicleta Elétrica Dobrável Aro 14',
         image: 'https://http2.mlstatic.com/D_NQ_NP_603508-MLA113190607451_062026-O.webp',
         fallbackImage: '/images/bicicleta_mercadolivre.webp',
@@ -54,11 +69,13 @@ export const MercadoLivreBanner: React.FC<MercadoLivreBannerProps> = ({
       data-banner-id={bannerInternalName}
       data-internal-name={bannerInternalName}
       aria-label={product.ariaLabel}
-      className={`w-full rounded-xl overflow-hidden border transition-all animate-gentle-blink ${
+      aria-hidden={hidden ? 'true' : undefined}
+      style={hidden ? { display: 'none' } : undefined}
+      className={`${hidden ? 'hidden ' : ''}w-full rounded-xl overflow-hidden border transition-all animate-gentle-blink ${
         highContrast
           ? 'bg-black text-white border-2 border-yellow-400'
           : 'bg-white dark:bg-slate-900 border-[#FFE600] dark:border-amber-500/40 shadow-xs hover:shadow-sm'
-      }`}
+      } ${className}`}
     >
       {/* Mercado Livre Compact Header Strip */}
       <div className="bg-[#FFE600] text-[#2D3277] px-3 py-1.5 flex items-center justify-between gap-2 font-bold text-[10px] sm:text-xs">
