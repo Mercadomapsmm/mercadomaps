@@ -46,40 +46,112 @@ export function encodeListsForUrl(lists: ShoppingList[], sharedByName: string): 
 }
 
 /**
- * Decodifica as listas a partir do parâmetro da URL de forma resiliente
- * Compatível tanto com o formato comprimido LZ (lz_...) quanto com Base64 legado
+ * Extrai o parâmetro shared_data da URL atual em qualquer formato (search, hash ou href)
+ */
+export function extractSharedDataFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    // 1. URLSearchParams padrão
+    if (window.location.search) {
+      const sp = new URLSearchParams(window.location.search);
+      const val = sp.get('shared_data');
+      if (val) return val;
+    }
+
+    // 2. Expressão regular na URL completa (href)
+    const href = window.location.href;
+    const match = href.match(/[?&#]shared_data=([^&#\s]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    // 3. Hash da URL caso tenha sido roteado via hash
+    if (window.location.hash) {
+      const hashMatch = window.location.hash.match(/shared_data=([^&#\s]+)/);
+      if (hashMatch && hashMatch[1]) {
+        return hashMatch[1];
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao extrair shared_data da URL:', e);
+  }
+  return null;
+}
+
+/**
+ * Decodifica as listas a partir do parâmetro da URL de forma altamente resiliente
+ * Compatível com LZ-String comprimido, Base64 legado, caracteres especiais e percent-encoding
  */
 export function decodeListsFromUrl(encoded: string): SharedDataPayload | null {
   try {
     if (!encoded) return null;
     let cleanStr = encoded.trim();
 
+    // Remove artefatos de final de URL (barras extras, pontos, hashtags soltas)
+    cleanStr = cleanStr.replace(/[/.#]+$/, '');
+
     let jsonStr: string | null = null;
 
     if (cleanStr.startsWith('lz_')) {
       const lzData = cleanStr.slice(3);
+      // Tentativa 1: direta
       jsonStr = LZString.decompressFromEncodedURIComponent(lzData);
-    } else {
-      // Fallback legado (Base64)
+
+      // Tentativa 2: decodificando percent-encoding
+      if (!jsonStr) {
+        try {
+          jsonStr = LZString.decompressFromEncodedURIComponent(decodeURIComponent(lzData));
+        } catch {
+          // Ignore
+        }
+      }
+
+      // Tentativa 3: restaurando espaços que eram '+'
+      if (!jsonStr && lzData.includes(' ')) {
+        try {
+          jsonStr = LZString.decompressFromEncodedURIComponent(lzData.replace(/ /g, '+'));
+        } catch {
+          // Ignore
+        }
+      }
+
+      // Tentativa 4: percent-encoded + restaura espaços
+      if (!jsonStr) {
+        try {
+          const dec = decodeURIComponent(lzData).replace(/ /g, '+');
+          jsonStr = LZString.decompressFromEncodedURIComponent(dec);
+        } catch {
+          // Ignore
+        }
+      }
+    }
+
+    // Fallback para Base64 se não for LZ ou se a descompressão LZ não retornar
+    if (!jsonStr) {
+      let b64Str = cleanStr.startsWith('lz_') ? cleanStr.slice(3) : cleanStr;
       try {
-        if (cleanStr.includes('%')) {
-          cleanStr = decodeURIComponent(cleanStr);
+        if (b64Str.includes('%')) {
+          b64Str = decodeURIComponent(b64Str);
         }
       } catch {
         // Ignora erro de URI
       }
 
-      cleanStr = cleanStr.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
-      while (cleanStr.length % 4 !== 0) {
-        cleanStr += '=';
+      b64Str = b64Str.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+      while (b64Str.length % 4 !== 0) {
+        b64Str += '=';
       }
 
-      const binary = atob(cleanStr);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
+      try {
+        const binary = atob(b64Str);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        jsonStr = new TextDecoder().decode(bytes);
+      } catch {
+        // Ignore
       }
-      jsonStr = new TextDecoder().decode(bytes);
     }
 
     if (!jsonStr) return null;
@@ -120,6 +192,80 @@ export function decodeListsFromUrl(encoded: string): SharedDataPayload | null {
 }
 
 /**
+ * Instala e adiciona as listas compartilhadas com sucesso no destino:
+ * - Se o destino for um novo usuário ou tiver apenas as listas demo iniciais, substitui pelas listas reais compartilhadas.
+ * - Se o destino já tiver listas personalizadas, ADICIONA cada lista compartilhada com segurança (adicionando sufixo se houver duplicidade de nome) e ativa a primeira lista adicionada.
+ */
+export function installSharedLists(
+  incomingLists: ShoppingList[],
+  existingLists: ShoppingList[],
+  isNewOrUntouched: boolean
+): { merged: ShoppingList[]; targetActiveId: string; addedCount: number } {
+  if (!incomingLists || incomingLists.length === 0) {
+    return {
+      merged: existingLists || [],
+      targetActiveId: existingLists && existingLists[0] ? existingLists[0].id : '',
+      addedCount: 0,
+    };
+  }
+
+  // Se o destino for novo usuário ou tiver apenas as listas demo iniciais não modificadas:
+  // instala as listas compartilhadas diretamente como as listas principais do app!
+  if (isNewOrUntouched || !existingLists || existingLists.length === 0) {
+    const targetActiveId = incomingLists[0] ? incomingLists[0].id : '';
+    return {
+      merged: incomingLists,
+      targetActiveId,
+      addedCount: incomingLists.length,
+    };
+  }
+
+  // Se o usuário já possui listas criadas, ADICIONA as listas compartilhadas à coleção existente
+  const merged = [...existingLists];
+  const existingNames = new Set(existingLists.map((l) => l.name.trim().toLowerCase()));
+  let firstTargetId = '';
+
+  incomingLists.forEach((incoming, idx) => {
+    let finalName = incoming.name.trim();
+    // Se o nome já existir no destino, adiciona um indicador claro para não confundir
+    if (existingNames.has(finalName.toLowerCase())) {
+      finalName = `${finalName} (Compartilhada)`;
+    }
+    existingNames.add(finalName.toLowerCase());
+
+    const uniqueId = `list-shared-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
+    const newList: ShoppingList = {
+      ...incoming,
+      id: uniqueId,
+      name: finalName,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      items: (incoming.items || []).map((item, itemIdx) => ({
+        ...item,
+        id: `item-shared-${Date.now()}-${idx}-${itemIdx}`,
+      })),
+    };
+
+    merged.push(newList);
+    if (!firstTargetId) {
+      firstTargetId = uniqueId;
+    }
+  });
+
+  return {
+    merged,
+    targetActiveId: firstTargetId || (merged[0] ? merged[0].id : ''),
+    addedCount: incomingLists.length,
+  };
+}
+
+// Alias para compatibilidade
+export const mergeIncomingListsWithExisting = (
+  incoming: ShoppingList[],
+  existing: ShoppingList[]
+) => installSharedLists(incoming, existing, false);
+
+/**
  * Gera texto formatado para envio no WhatsApp contendo o ícone e a descrição do app com todas as listas
  */
 export function formatAllListsWhatsAppMessage(lists: ShoppingList[], appUrl: string, userName?: string): string {
@@ -132,7 +278,7 @@ export function formatAllListsWhatsAppMessage(lists: ShoppingList[], appUrl: str
   let msg = `🛒 *Lista de Compras*\n`;
   msg += `App acessível e prático de lista de compras doméstica com comando de voz, fontes legíveis e organização por categorias de supermercado.\n\n`;
   if (appUrl) {
-    msg += `📱 *Acesse o aplicativo com as ${totalLists} ${totalLists === 1 ? 'lista' : 'listas'} criadas (${totalItemsCount} itens):*\n${appUrl}`;
+    msg += `📲 *Você recebeu uma atualização com ${totalLists} ${totalLists === 1 ? 'lista' : 'listas'} (${totalItemsCount} itens). Abra o link abaixo e confirme para continuar:* \n${appUrl}`;
   }
   return msg;
 }
@@ -144,7 +290,7 @@ export function formatWhatsAppMessage(list: ShoppingList, appUrl: string): strin
   let msg = `🛒 *Lista de Compras*\n`;
   msg += `App acessível e prático de lista de compras doméstica com comando de voz, fontes legíveis e organização por categorias de supermercado.\n\n`;
   if (appUrl) {
-    msg += `📱 *Acesse o aplicativo com a lista "${list.name}":*\n${appUrl}`;
+    msg += `📲 *Abra o link abaixo para instalar a lista "${list.name}":*\n${appUrl}`;
   }
   return msg;
 }

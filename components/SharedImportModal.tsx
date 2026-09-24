@@ -25,7 +25,7 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
   if (!isOpen || !sharedData) return null;
 
   const totalLists = sharedData.lists.length;
-  const totalItems = sharedData.lists.reduce((acc, l) => acc + l.items.length, 0);
+  const totalItems = sharedData.lists.reduce((acc, l) => acc + (l.items || []).length, 0);
 
   return (
     <div
@@ -52,14 +52,15 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
               <ShoppingCart className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Sincronização Recebida
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+                Atualização Recebida
               </span>
               <h2
                 id="shared-import-title"
                 className="text-lg sm:text-xl font-black tracking-tight"
               >
-                Confirmar Atualização de Listas
+                Você recebeu uma atualização!
               </h2>
             </div>
           </div>
@@ -83,13 +84,18 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
             ) : (
               'Um usuário'
             )}{' '}
-            compartilhou com você <strong>{totalLists} {totalLists === 1 ? 'lista de compras' : 'listas de compras'}</strong> contendo <strong>{totalItems} {totalItems === 1 ? 'item' : 'itens'}</strong> no total.
+            compartilhou o aplicativo com você contendo <strong>{totalLists} {totalLists === 1 ? 'lista de compras' : 'listas de compras'}</strong> e <strong>{totalItems} {totalItems === 1 ? 'item' : 'itens'}</strong> no total.
           </p>
+
+          {/* Pergunta de Confirmação em Destaque */}
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+            <span>Deseja continuar e atualizar o seu aplicativo com estas listas?</span>
+          </div>
 
           {/* Pré-visualização das Listas Recebidas */}
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
             <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Listas que serão adicionadas/atualizadas:
+              Listas prontas para adicionar/atualizar:
             </h4>
             <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               {sharedData.lists.map((l) => (
@@ -102,7 +108,7 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
                     <span className="truncate">{l.name}</span>
                   </div>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 shrink-0">
-                    {l.items.length} {l.items.length === 1 ? 'item' : 'itens'}
+                    {(l.items || []).length} {(l.items || []).length === 1 ? 'item' : 'itens'}
                   </span>
                 </div>
               ))}
@@ -110,10 +116,10 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
           </div>
 
           {/* Garantia de Segurança das Listas Existentes */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs sm:text-sm text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
+          <div className="p-3.5 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
             <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="leading-snug">
-              <strong className="block font-bold">Suas listas atuais estão seguras!</strong>
+              <strong className="block font-bold text-slate-900 dark:text-white">Suas listas atuais estão seguras!</strong>
               Nenhuma das suas listas já existentes neste aparelho será apagada. As novas listas e novos itens serão integrados harmoniosamente.
             </div>
           </div>
@@ -125,19 +131,19 @@ export const SharedImportModal: React.FC<SharedImportModalProps> = ({
             id="confirm-update-shared-device-btn"
             type="button"
             onClick={onConfirm}
-            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>Confirmar Atualização</span>
+            <span>Sim, Continuar e Atualizar</span>
           </button>
 
           <button
             id="cancel-update-shared-device-btn"
             type="button"
             onClick={onCancel}
-            className="w-full sm:w-auto px-5 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-5 py-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <span>Manter Atuais</span>
+            <span>Manter Como Está</span>
           </button>
         </div>
       </div>

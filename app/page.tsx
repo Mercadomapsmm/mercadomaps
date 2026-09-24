@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { ShoppingList, ShoppingItem, AccessibilitySettings, CategoryId, UnitType } from '@/types/shopping';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
@@ -11,6 +11,7 @@ import { ListSelector } from '@/components/ListSelector';
 import { VoiceModal } from '@/components/VoiceModal';
 import { ShareModal } from '@/components/ShareModal';
 import { SharedImportModal } from '@/components/SharedImportModal';
+import { AutoInstalledToast, AutoInstalledNoticeData } from '@/components/AutoInstalledToast';
 import { MercadoLivreBanner } from '@/components/MercadoLivreBanner';
 import { PwaRegister } from '@/components/PwaRegister';
 import { CONTRAST_THEMES } from '@/lib/contrastThemes';
@@ -18,7 +19,11 @@ import { CATEGORIES, detectCategory } from '@/lib/categories';
 import { agruparItensPorTabela } from '@/lib/productTable';
 import { ParsedVoiceItem, speakListItems, stopSpeaking } from '@/lib/speech';
 import { playCheckSound, playUncheckSound, playCompleteSound, playAddSound } from '@/lib/sound';
-import { decodeListsFromUrl } from '@/lib/sharing';
+import {
+  decodeListsFromUrl,
+  extractSharedDataFromUrl,
+  installSharedLists,
+} from '@/lib/sharing';
 import { Mic, Search, CheckCircle, ShoppingCart, Layers, Share2 } from 'lucide-react';
 
 const INITIAL_LISTS: ShoppingList[] = [
@@ -197,6 +202,7 @@ export default function ShoppingListPage() {
     lists: ShoppingList[];
     sharedByName: string;
   } | null>(null);
+  const [autoInstalledNotice, setAutoInstalledNotice] = useState<AutoInstalledNoticeData | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Alternância de posições entre bans-01 e bani-01 a cada 30 segundos
@@ -211,53 +217,59 @@ export default function ShoppingListPage() {
     return () => clearInterval(bannerSwapInterval);
   }, []);
 
-  // Load from localStorage on mount only to prevent hydration mismatch
+  const isInitialMount = useRef(true);
+
+  // Load from localStorage on mount and check for shared_data in URL
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
+        let currentLists = INITIAL_LISTS;
+        let isUntouched = true;
         const savedLists = localStorage.getItem('lista_compras_domestica_lists');
         if (savedLists) {
-          const parsed = JSON.parse(savedLists);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setLists(parsed);
-          }
-        }
-
-        const savedActiveId = localStorage.getItem('lista_compras_domestica_active_id');
-        if (savedActiveId) {
-          setActiveListId(savedActiveId);
-        }
-        const savedSettings = localStorage.getItem('lista_compras_domestica_settings');
-        if (savedSettings) {
-          setSettings(JSON.parse(savedSettings));
-        }
-
-        // Verifica se há dados de listas compartilhadas na URL (?shared_data=)
-        if (typeof window !== 'undefined') {
-          let sharedData: string | null = null;
           try {
-            const params = new URLSearchParams(window.location.search);
-            sharedData = params.get('shared_data');
-            if (!sharedData && window.location.hash.includes('shared_data=')) {
-              const hashIdx = window.location.hash.indexOf('?');
-              if (hashIdx !== -1) {
-                const hashParams = new URLSearchParams(window.location.hash.slice(hashIdx));
-                sharedData = hashParams.get('shared_data');
-              }
+            const parsed = JSON.parse(savedLists);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              currentLists = parsed;
+              isUntouched = false;
             }
           } catch {
             // Ignore
           }
-          if (sharedData) {
-            const decoded = decodeListsFromUrl(sharedData);
-            if (decoded && decoded.lists && decoded.lists.length > 0) {
-              setSharedImportPrompt(decoded);
-            }
+        }
+
+        const savedActiveId = localStorage.getItem('lista_compras_domestica_active_id');
+        const savedSettings = localStorage.getItem('lista_compras_domestica_settings');
+        if (savedSettings) {
+          try {
+            setSettings(JSON.parse(savedSettings));
+          } catch {
+            // Ignore
           }
         }
-      } catch {
-        // Ignore
+
+        // Restaura os dados locais
+        if (!isUntouched) {
+          setLists(currentLists);
+        }
+        if (savedActiveId) {
+          setActiveListId(savedActiveId);
+        }
+
+        // Verifica se há dados de listas compartilhadas na URL (?shared_data=)
+        const sharedDataRaw = extractSharedDataFromUrl();
+        if (sharedDataRaw) {
+          const decoded = decodeListsFromUrl(sharedDataRaw);
+          if (decoded && decoded.lists && decoded.lists.length > 0) {
+            // Notifica o destino que recebeu uma atualização e pergunta se deseja continuar
+            setSharedImportPrompt(decoded);
+          }
+        }
+      } catch (err) {
+        console.error('Erro na inicialização do app:', err);
       }
+
+      isInitialMount.current = false;
       setHasMounted(true);
     }, 0);
 
@@ -266,7 +278,7 @@ export default function ShoppingListPage() {
 
   // Save to localStorage when state updates after mount
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted || isInitialMount.current) return;
     try {
       localStorage.setItem('lista_compras_domestica_lists', JSON.stringify(lists));
       localStorage.setItem('lista_compras_domestica_settings', JSON.stringify(settings));
@@ -498,80 +510,20 @@ export default function ShoppingListPage() {
     );
   };
 
-  // Mescla as listas recebidas mantendo todas as listas já criadas no destino
-  const mergeIncomingListsWithExisting = (
-    incomingLists: ShoppingList[],
-    existingLists: ShoppingList[]
-  ): { merged: ShoppingList[]; targetActiveId: string } => {
-    const merged = [...existingLists];
-    let firstTargetId = '';
-
-    incomingLists.forEach((incoming, idx) => {
-      const matchIndex = merged.findIndex(
-        (l) =>
-          l.id === incoming.id ||
-          l.name.trim().toLowerCase() === incoming.name.trim().toLowerCase()
-      );
-
-      if (matchIndex >= 0) {
-        // Lista já existente no destino: preserva e mescla novos itens sem duplicar por nome
-        const existing = merged[matchIndex];
-        const existingItemNames = new Set(
-          existing.items.map((i) => i.name.trim().toLowerCase())
-        );
-
-        const newItemsToAdd = (incoming.items || [])
-          .filter((item) => !existingItemNames.has(item.name.trim().toLowerCase()))
-          .map((item, itemIdx) => ({
-            ...item,
-            id: item.id || `item-merged-${Date.now()}-${idx}-${itemIdx}`,
-          }));
-
-        merged[matchIndex] = {
-          ...existing,
-          items: [...existing.items, ...newItemsToAdd],
-          updatedAt: Date.now(),
-        };
-
-        if (!firstTargetId) {
-          firstTargetId = existing.id;
-        }
-      } else {
-        // Nova lista: adiciona à coleção existente sem substituir nenhuma lista anterior
-        const targetId = merged.some((l) => l.id === incoming.id)
-          ? `list-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`
-          : incoming.id || `list-${Date.now()}-${idx}`;
-
-        const newList: ShoppingList = {
-          ...incoming,
-          id: targetId,
-          updatedAt: Date.now(),
-        };
-
-        merged.push(newList);
-
-        if (!firstTargetId) {
-          firstTargetId = targetId;
-        }
-      }
-    });
-
-    return {
-      merged,
-      targetActiveId: firstTargetId || (merged[0] ? merged[0].id : ''),
-    };
-  };
-
   const handleConfirmSharedImport = () => {
     if (!sharedImportPrompt) return;
-    const { merged, targetActiveId } = mergeIncomingListsWithExisting(
+    const isUntouched = !localStorage.getItem('lista_compras_domestica_lists');
+    const { merged, targetActiveId } = installSharedLists(
       sharedImportPrompt.lists,
-      lists
+      lists,
+      isUntouched
     );
+
     setLists(merged);
     if (targetActiveId) {
       setActiveListId(targetActiveId);
     }
+
     try {
       localStorage.setItem('lista_compras_domestica_lists', JSON.stringify(merged));
       if (targetActiveId) {
@@ -580,17 +532,28 @@ export default function ShoppingListPage() {
     } catch {
       // Ignore
     }
-    setSharedImportPrompt(null);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('shared_data');
-      window.history.replaceState({}, document.title, url.pathname);
+
+    // Limpa o parâmetro da URL
+    try {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('shared_data');
+      window.history.replaceState({}, document.title, cleanUrl.pathname);
+    } catch {
+      // Ignore
     }
-    if (settings.soundFeedback) playAddSound();
+
+    setAutoInstalledNotice({
+      lists: sharedImportPrompt.lists,
+      sharedByName: sharedImportPrompt.sharedByName,
+      totalItems: sharedImportPrompt.lists.reduce((acc, l) => acc + (l.items || []).length, 0),
+    });
+
+    setSharedImportPrompt(null);
+    playCompleteSound();
     try {
       confetti({
-        particleCount: 70,
-        spread: 60,
+        particleCount: 80,
+        spread: 70,
         origin: { y: 0.6 },
       });
     } catch {
@@ -598,10 +561,29 @@ export default function ShoppingListPage() {
     }
   };
 
+  const handleCancelSharedImport = () => {
+    setSharedImportPrompt(null);
+    try {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('shared_data');
+      window.history.replaceState({}, document.title, cleanUrl.pathname);
+    } catch {
+      // Ignore
+    }
+  };
+
   const handleImportLists = (newLists: ShoppingList[]) => {
-    const { merged, targetActiveId } = mergeIncomingListsWithExisting(newLists, lists);
+    const { merged, targetActiveId } = installSharedLists(newLists, lists, false);
     setLists(merged);
     if (targetActiveId) setActiveListId(targetActiveId);
+    try {
+      localStorage.setItem('lista_compras_domestica_lists', JSON.stringify(merged));
+      if (targetActiveId) {
+        localStorage.setItem('lista_compras_domestica_active_id', targetActiveId);
+      }
+    } catch {
+      // Ignore
+    }
   };
 
   const handleClearBought = () => {
@@ -833,19 +815,19 @@ export default function ShoppingListPage() {
 
       {/* Main Container */}
       <main className={`max-w-4xl mx-auto ${containerPaddingClass} pt-4 pb-12 space-y-5 sm:space-y-6`}>
-        {/* Popup Modal para Confirmação da Atualização no Aparelho de Destino */}
+        {/* Modal que informa o destino sobre a atualização recebida e pergunta se deseja continuar */}
         <SharedImportModal
           isOpen={!!sharedImportPrompt}
           sharedData={sharedImportPrompt}
           onConfirm={handleConfirmSharedImport}
-          onCancel={() => {
-            setSharedImportPrompt(null);
-            if (typeof window !== 'undefined') {
-              const url = new URL(window.location.href);
-              url.searchParams.delete('shared_data');
-              window.history.replaceState({}, document.title, url.pathname);
-            }
-          }}
+          onCancel={handleCancelSharedImport}
+          highContrast={settings.highContrast}
+        />
+
+        {/* Notificação Toast de Atualização Concluída */}
+        <AutoInstalledToast
+          data={autoInstalledNotice}
+          onClose={() => setAutoInstalledNotice(null)}
           highContrast={settings.highContrast}
         />
 

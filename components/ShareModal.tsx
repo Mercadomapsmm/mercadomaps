@@ -171,6 +171,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               </span>
             ))}
           </div>
+          <div className="pt-1 border-t border-slate-200 dark:border-slate-700/60 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span>Notificação de atualização no destino: ao abrir o link, a pessoa é informada sobre a atualização e confirma se deseja continuar!</span>
+          </div>
         </div>
 
         {/* Notificação de link copiado se acionado */}
