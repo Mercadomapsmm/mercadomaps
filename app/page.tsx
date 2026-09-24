@@ -502,10 +502,11 @@ export default function ShoppingListPage() {
   const mergeIncomingListsWithExisting = (
     incomingLists: ShoppingList[],
     existingLists: ShoppingList[]
-  ): ShoppingList[] => {
+  ): { merged: ShoppingList[]; targetActiveId: string } => {
     const merged = [...existingLists];
+    let firstTargetId = '';
 
-    incomingLists.forEach((incoming) => {
+    incomingLists.forEach((incoming, idx) => {
       const matchIndex = merged.findIndex(
         (l) =>
           l.id === incoming.id ||
@@ -519,11 +520,11 @@ export default function ShoppingListPage() {
           existing.items.map((i) => i.name.trim().toLowerCase())
         );
 
-        const newItemsToAdd = incoming.items
+        const newItemsToAdd = (incoming.items || [])
           .filter((item) => !existingItemNames.has(item.name.trim().toLowerCase()))
-          .map((item) => ({
+          .map((item, itemIdx) => ({
             ...item,
-            id: `item-merged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: item.id || `item-merged-${Date.now()}-${idx}-${itemIdx}`,
           }));
 
         merged[matchIndex] = {
@@ -531,24 +532,53 @@ export default function ShoppingListPage() {
           items: [...existing.items, ...newItemsToAdd],
           updatedAt: Date.now(),
         };
+
+        if (!firstTargetId) {
+          firstTargetId = existing.id;
+        }
       } else {
         // Nova lista: adiciona à coleção existente sem substituir nenhuma lista anterior
-        merged.push({
+        const targetId = merged.some((l) => l.id === incoming.id)
+          ? `list-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`
+          : incoming.id || `list-${Date.now()}-${idx}`;
+
+        const newList: ShoppingList = {
           ...incoming,
-          id: `list-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: targetId,
           updatedAt: Date.now(),
-        });
+        };
+
+        merged.push(newList);
+
+        if (!firstTargetId) {
+          firstTargetId = targetId;
+        }
       }
     });
 
-    return merged;
+    return {
+      merged,
+      targetActiveId: firstTargetId || (merged[0] ? merged[0].id : ''),
+    };
   };
 
   const handleConfirmSharedImport = () => {
     if (!sharedImportPrompt) return;
-    setLists((prev) => mergeIncomingListsWithExisting(sharedImportPrompt.lists, prev));
-    if (sharedImportPrompt.lists[0]) {
-      setActiveListId(sharedImportPrompt.lists[0].id);
+    const { merged, targetActiveId } = mergeIncomingListsWithExisting(
+      sharedImportPrompt.lists,
+      lists
+    );
+    setLists(merged);
+    if (targetActiveId) {
+      setActiveListId(targetActiveId);
+    }
+    try {
+      localStorage.setItem('lista_compras_domestica_lists', JSON.stringify(merged));
+      if (targetActiveId) {
+        localStorage.setItem('lista_compras_domestica_active_id', targetActiveId);
+      }
+    } catch {
+      // Ignore
     }
     setSharedImportPrompt(null);
     if (typeof window !== 'undefined') {
@@ -569,7 +599,9 @@ export default function ShoppingListPage() {
   };
 
   const handleImportLists = (newLists: ShoppingList[]) => {
-    setLists((prev) => mergeIncomingListsWithExisting(newLists, prev));
+    const { merged, targetActiveId } = mergeIncomingListsWithExisting(newLists, lists);
+    setLists(merged);
+    if (targetActiveId) setActiveListId(targetActiveId);
   };
 
   const handleClearBought = () => {

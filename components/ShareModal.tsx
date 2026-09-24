@@ -27,7 +27,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
 
-  // Gera o link de sincronização contendo as listas criadas
+  // Gera o link de sincronização contendo TODAS as listas criadas com compressão segura
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !lists || lists.length === 0) return '';
     const encoded = encodeListsForUrl(lists, userName);
@@ -49,6 +49,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   }, [textToShare, shareUrl]);
 
   if (!isOpen) return null;
+
+  const totalListsCount = lists.length;
+  const totalItemsCount = lists.reduce((acc, l) => acc + (l.items || []).length, 0);
 
   // Compartilhamento robusto com suporte a Web Share (mobile) e WhatsApp direto
   const handleShareClick = async (e: React.MouseEvent) => {
@@ -136,7 +139,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         </div>
 
         {/* Card exibindo somente o ícone e a descrição do app */}
-        <div className="mt-5 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-center space-y-2.5">
+        <div className="mt-4 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-center space-y-2">
           <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
             <ShoppingCart className="w-6 h-6 text-white" />
           </div>
@@ -148,11 +151,33 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </p>
         </div>
 
+        {/* Confirmação visual de que TODAS as listas criadas serão levadas */}
+        <div className="mt-3.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs space-y-2">
+          <div className="flex items-center justify-between font-bold text-slate-700 dark:text-slate-200">
+            <span>Levando todas as {totalListsCount} listas criadas:</span>
+            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+              {totalItemsCount} itens
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+            {lists.map((l) => (
+              <span
+                key={l.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-semibold text-[11px] text-slate-800 dark:text-slate-200 shadow-2xs"
+              >
+                <span>{l.icon || '🛒'}</span>
+                <span className="truncate max-w-[130px]">{l.name}</span>
+                <span className="text-[10px] text-slate-400">({(l.items || []).length})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* Notificação de link copiado se acionado */}
         {copied && (
           <div className="mt-3 p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 animate-in fade-in">
             <Check className="w-4 h-4 text-emerald-600" />
-            <span>Link copiado e pronto para compartilhar!</span>
+            <span>Link copiado com todas as listas!</span>
           </div>
         )}
 
